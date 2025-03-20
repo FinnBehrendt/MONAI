@@ -57,6 +57,7 @@ def sliding_window_inference(
     buffer_steps: int | None = None,
     buffer_dim: int = -1,
     with_coord: bool = False,
+    condition: torch.Tensor | None = None,
     *args: Any,
     **kwargs: Any,
 ) -> torch.Tensor | tuple[torch.Tensor, ...] | dict[Any, torch.Tensor]:
@@ -127,6 +128,7 @@ def sliding_window_inference(
             0 indicates the first spatial dimension. Default is -1, the last spatial dimension.
         with_coord: whether to pass the window coordinates to ``predictor``. Default is False.
             If True, the signature of ``predictor`` should be ``predictor(patch_data, patch_coord, ...)``.
+        condition: optional condition tensor to be slided the same way as the input and fed to the predictor.
         args: optional args to be passed to ``predictor``.
         kwargs: optional keyword args to be passed to ``predictor``.
 
@@ -168,6 +170,8 @@ def sliding_window_inference(
         pad_size.extend([half, diff - half])
     if any(pad_size):
         inputs = F.pad(inputs, pad=pad_size, mode=look_up_option(padding_mode, PytorchPadMode), value=cval)
+        if condition is not None:
+            condition = F.pad(condition, pad=pad_size, mode=look_up_option(padding_mode, PytorchPadMode), value=cval)
 
     # Store all slices
     scan_interval = _get_scan_interval(image_size, roi_size, num_spatial_dims, overlap)
@@ -220,13 +224,29 @@ def sliding_window_inference(
         ]
         if sw_batch_size > 1:
             win_data = torch.cat([inputs[win_slice] for win_slice in unravel_slice]).to(sw_device)
+            if condition is not None:
+                if condition.ndim == 4:  # Dense conditioning case
+                    win_condition = torch.cat([condition[win_slice[2]] for win_slice in unravel_slice]).to(sw_device)
+                else:
+                    win_condition = torch.cat([condition[win_slice] for win_slice in unravel_slice]).to(sw_device)
         else:
             win_data = inputs[unravel_slice[0]].to(sw_device)
-        if with_coord:
-            seg_prob_out = predictor(win_data, unravel_slice, *args, **kwargs)  # batched patch
-        else:
-            seg_prob_out = predictor(win_data, *args, **kwargs)  # batched patch
+            if condition is not None:
+                if condition.ndim == 4:  # Dense conditioning case
+                    win_condition = condition[unravel_slice[0][2]].to(sw_device)
+                else:
+                    win_condition = condition[unravel_slice[0]].to(sw_device)
 
+        if with_coord:
+            if condition is not None:
+                seg_prob_out = predictor(win_data, win_condition, unravel_slice, *args, **kwargs)
+            else:
+                seg_prob_out = predictor(win_data, unravel_slice, *args, **kwargs)
+        else:
+            if condition is not None:
+                seg_prob_out = predictor(win_data, win_condition, *args, **kwargs)
+            else:
+                seg_prob_out = predictor(win_data, *args, **kwargs)
         # convert seg_prob_out to tuple seg_tuple, this does not allocate new memory.
         dict_keys, seg_tuple = _flatten_struct(seg_prob_out)
         if process_fn:

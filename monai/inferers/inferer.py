@@ -509,6 +509,7 @@ class SlidingWindowInferer(Inferer):
         self,
         inputs: torch.Tensor,
         network: Callable[..., torch.Tensor | Sequence[torch.Tensor] | dict[Any, torch.Tensor]],
+        condition: torch.Tensor | None = None,
         *args: Any,
         **kwargs: Any,
     ) -> torch.Tensor | tuple[torch.Tensor, ...] | dict[Any, torch.Tensor]:
@@ -518,6 +519,7 @@ class SlidingWindowInferer(Inferer):
             inputs: model input data for inference.
             network: target model to execute inference.
                 supports callables such as ``lambda x: my_torch_model(x, additional_config)``
+            condition: conditional signal for inference
             args: optional args to be passed to ``network``.
             kwargs: optional keyword args to be passed to ``network``.
 
@@ -548,6 +550,7 @@ class SlidingWindowInferer(Inferer):
             buffer_steps,
             buffer_dim,
             self.with_coord,
+            condition,
             *args,
             **kwargs,
         )
@@ -745,7 +748,7 @@ class SliceInferer(SlidingWindowInferer):
                 f"Currently, only 2D `roi_size` ({self.orig_roi_size}) with 3D `inputs` tensor (shape={inputs.shape}) is supported."
             )
 
-        return super().__call__(inputs=inputs, network=lambda x: self.network_wrapper(network, x, *args, **kwargs))
+        return super().__call__(inputs=inputs, network=lambda x, c, *args, **kwargs : self.network_wrapper(network, x, c, *args, **kwargs), condition=condition)
 
     def network_wrapper(
         self,
