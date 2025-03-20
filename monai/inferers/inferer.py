@@ -87,6 +87,7 @@ class Inferer(ABC):
         Args:
             inputs: input of the model inference.
             network: model for inference.
+            condition: conditional signal for inference (e.g. for conditional GANs or Diffusion Models).
             args: optional args to be passed to ``network``.
             kwargs: optional keyword args to be passed to ``network``.
 
@@ -719,6 +720,7 @@ class SliceInferer(SlidingWindowInferer):
         self,
         inputs: torch.Tensor,
         network: Callable[..., torch.Tensor | Sequence[torch.Tensor] | dict[Any, torch.Tensor]],
+        condition: torch.Tensor | None = None,
         *args: Any,
         **kwargs: Any,
     ) -> torch.Tensor | tuple[torch.Tensor, ...] | dict[Any, torch.Tensor]:
@@ -726,6 +728,7 @@ class SliceInferer(SlidingWindowInferer):
         Args:
             inputs: 3D input for inference
             network: 2D model to execute inference on slices in the 3D input
+            condition: 3D conditioning signal for inference
             args: optional args to be passed to ``network``.
             kwargs: optional keyword args to be passed to ``network``.
         """
@@ -748,6 +751,7 @@ class SliceInferer(SlidingWindowInferer):
         self,
         network: Callable[..., torch.Tensor | Sequence[torch.Tensor] | dict[Any, torch.Tensor]],
         x: torch.Tensor,
+        condition: torch.Tensor | None = None,
         *args: Any,
         **kwargs: Any,
     ) -> torch.Tensor | tuple[torch.Tensor, ...] | dict[Any, torch.Tensor]:
@@ -756,7 +760,12 @@ class SliceInferer(SlidingWindowInferer):
         """
         #  Pass 4D input [N, C, H, W]/[N, C, D, W]/[N, C, D, H] to the model as it is 2D.
         x = x.squeeze(dim=self.spatial_dim + 2)
-        out = network(x, *args, **kwargs)
+
+        if condition is not None:
+            condition = condition.squeeze(dim=self.spatial_dim + 2)
+            out = network(x, condition, *args, **kwargs)
+        else:
+            out = network(x, *args, **kwargs)
 
         #  Unsqueeze the network output so it is [N, C, D, H, W] as expected by
         # the default SlidingWindowInferer class
