@@ -322,11 +322,16 @@ class PatchInferer(Inferer):
                 or a MetaTensor that has metadata for `PatchKeys.LOCATION`. In both cases no splitter should be provided.
             network: target model to execute inference.
                 supports callables such as ``lambda x: my_torch_model(x, additional_config)``
-            condition: optional conditional signal for inference
+            condition: conditional signal for inference (e.g. for conditional GANs or Diffusion Models).
             args: optional args to be passed to ``network``.
             kwargs: optional keyword args to be passed to ``network``.
 
         """
+        if condition is not None: 
+            if condition.shape != inputs.shape:
+                raise ValueError(
+                    f"Input and condition shapes do not match: {inputs.shape} vs {condition.shape}"
+                )
         patches_locations: Iterable[tuple[torch.Tensor, Sequence[int]]] | MetaTensor
         if self.splitter is None:
             # handle situations where the splitter is not provided
@@ -537,12 +542,16 @@ class SlidingWindowInferer(Inferer):
             inputs: model input data for inference.
             network: target model to execute inference.
                 supports callables such as ``lambda x: my_torch_model(x, additional_config)``
-            condition: conditional signal for inference
+            condition: conditional signal for inference (e.g. for conditional GANs or Diffusion Models).
             args: optional args to be passed to ``network``.
             kwargs: optional keyword args to be passed to ``network``.
 
         """
-
+        if condition is not None: 
+            if condition.shape != inputs.shape:
+                raise ValueError(
+                    f"Input and condition shapes do not match: {inputs.shape} vs {condition.shape}"
+                )
         device = kwargs.pop("device", self.device)
         buffer_steps = kwargs.pop("buffer_steps", self.buffer_steps)
         buffer_dim = kwargs.pop("buffer_dim", self.buffer_dim)
@@ -749,7 +758,7 @@ class SliceInferer(SlidingWindowInferer):
         Args:
             inputs: 3D input for inference
             network: 2D model to execute inference on slices in the 3D input
-            condition: 3D conditioning signal for inference
+            condition: conditional signal for inference (e.g. for conditional GANs or Diffusion Models).
             args: optional args to be passed to ``network``.
             kwargs: optional keyword args to be passed to ``network``.
         """
