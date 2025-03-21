@@ -311,6 +311,7 @@ class PatchInferer(Inferer):
         self,
         inputs: torch.Tensor,
         network: Callable[..., torch.Tensor | Sequence[torch.Tensor] | dict[Any, torch.Tensor]],
+        condition: torch.Tensor | None = None,
         *args: Any,
         **kwargs: Any,
     ) -> Any:
@@ -321,6 +322,7 @@ class PatchInferer(Inferer):
                 or a MetaTensor that has metadata for `PatchKeys.LOCATION`. In both cases no splitter should be provided.
             network: target model to execute inference.
                 supports callables such as ``lambda x: my_torch_model(x, additional_config)``
+            condition: optional conditional signal for inference
             args: optional args to be passed to ``network``.
             kwargs: optional keyword args to be passed to ``network``.
 
@@ -345,20 +347,36 @@ class PatchInferer(Inferer):
                         f"The provided inputs type is {type(inputs)}."
                     )
             patches_locations = inputs
+            if condition is not None:
+                condition_locations = condition
         else:
             # apply splitter
             patches_locations = self.splitter(inputs)
+            if condition is not None:
+                # apply splitter to condition
+                condition_locations = self.splitter(condition)
+
 
         ratios: list[float] = []
         mergers: list[Merger] = []
-        for patches, locations, batch_size in self._batch_sampler(patches_locations):
-            # run inference
-            outputs = self._run_inference(network, patches, *args, **kwargs)
-            # initialize the mergers
-            if not mergers:
-                mergers, ratios = self._initialize_mergers(inputs, outputs, patches, batch_size)
-            # aggregate outputs
-            self._aggregate(outputs, locations, batch_size, mergers, ratios)
+        if condition is not None:
+            for (patches, locations, batch_size), (condition_patches, _, _) in zip(self._batch_sampler(patches_locations), self._batch_sampler(condition_locations)):
+                # run inference
+                outputs = self._run_inference(network, patches, condition_patches, *args, **kwargs)
+                # initialize the mergers
+                if not mergers:
+                    mergers, ratios = self._initialize_mergers(inputs, outputs, patches, batch_size)
+                # aggregate outputs
+                self._aggregate(outputs, locations, batch_size, mergers, ratios)
+        else:   
+            for patches, locations, batch_size in self._batch_sampler(patches_locations):
+                # run inference
+                outputs = self._run_inference(network, patches, *args, **kwargs)
+                # initialize the mergers
+                if not mergers:
+                    mergers, ratios = self._initialize_mergers(inputs, outputs, patches, batch_size)
+                # aggregate outputs
+                self._aggregate(outputs, locations, batch_size, mergers, ratios)
 
         # finalize the mergers and get the results
         merged_outputs = [merger.finalize() for merger in mergers]
