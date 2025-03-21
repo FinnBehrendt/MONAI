@@ -747,9 +747,11 @@ class SliceInferer(SlidingWindowInferer):
             raise RuntimeError(
                 f"Currently, only 2D `roi_size` ({self.orig_roi_size}) with 3D `inputs` tensor (shape={inputs.shape}) is supported."
             )
-
-        return super().__call__(inputs=inputs, network=lambda x, c, *args, **kwargs : self.network_wrapper(network, x, c, *args, **kwargs), condition=condition)
-
+        if condition is not None:
+            return super().__call__(inputs=inputs, network=lambda x, c, *args, **kwargs : self.network_wrapper(network, x, c, *args, **kwargs), condition=condition)
+        else:
+            return super().__call__(inputs=inputs, network=lambda x, *args, **kwargs : self.network_wrapper(network, x, *args, **kwargs))
+    
     def network_wrapper(
         self,
         network: Callable[..., torch.Tensor | Sequence[torch.Tensor] | dict[Any, torch.Tensor]],
