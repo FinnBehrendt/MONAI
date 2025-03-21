@@ -272,50 +272,55 @@ class PatchInfererTests(unittest.TestCase):
         ]
     )
     def test_patch_inferer_tensor(self, inputs, arguments, network, expected):
-        if isinstance(inputs, list): 
-            # clone list
-            condition = [x[0].clone() for x in inputs]
-        elif isinstance(inputs, dict):
-            condition = {k: v[0].clone() for k, v in inputs.items()}
+        if isinstance(inputs, list): # case 4 and 5
+            condition = [(x[0].clone(), x[1]) for x in inputs]        
         else:
             condition = inputs.clone()
         inferer = PatchInferer(**arguments)
         output = inferer(inputs=inputs, network=network, condition=condition)
         assert_allclose(output, expected)
 
-    # @parameterized.expand([TEST_CASE_0_LIST_TENSOR])
-    # def test_patch_inferer_list_tensor(self, inputs, arguments, network, expected):
-    #     inferer = PatchInferer(**arguments)
-    #     output = inferer(inputs=inputs, network=network)
-    #     for out, exp in zip(output, expected):
-    #         assert_allclose(out, exp)
+    @parameterized.expand([TEST_CASE_0_LIST_TENSOR])
+    def test_patch_inferer_list_tensor(self, inputs, arguments, network, expected):
+        if isinstance(inputs, list): # case 4 and 5
+            condition = [(x[0].clone(), x[1]) for x in inputs]        
+        else:
+            condition = inputs.clone()
+        inferer = PatchInferer(**arguments)
+        output = inferer(inputs=inputs, network=network, condition=condition)
+        for out, exp in zip(output, expected):
+            assert_allclose(out, exp)
 
-    # @parameterized.expand([TEST_CASE_0_DICT])
-    # def test_patch_inferer_dict(self, inputs, arguments, network, expected):
-    #     inferer = PatchInferer(**arguments)
-    #     output = inferer(inputs=inputs, network=network)
-    #     for k in expected:
-    #         assert_allclose(output[k], expected[k])
+    @parameterized.expand([TEST_CASE_0_DICT])
+    def test_patch_inferer_dict(self, inputs, arguments, network, expected):
+        if isinstance(inputs, list): # case 4 and 5
+            condition = [(x[0].clone(), x[1]) for x in inputs]        
+        else:
+            condition = inputs.clone()
+        inferer = PatchInferer(**arguments)
+        output = inferer(inputs=inputs, network=network, condition=condition)
+        for k in expected:
+            assert_allclose(output[k], expected[k])
 
-    # @parameterized.expand(
-    #     [
-    #         TEST_CASE_ERROR_0,
-    #         TEST_CASE_ERROR_1,
-    #         TEST_CASE_ERROR_2,
-    #         TEST_CASE_ERROR_3,
-    #         TEST_CASE_ERROR_4,
-    #         TEST_CASE_ERROR_5,
-    #         TEST_CASE_ERROR_6,
-    #         TEST_CASE_ERROR_7,
-    #         TEST_CASE_ERROR_8,
-    #         TEST_CASE_ERROR_9,
-    #     ]
-    # )
-    # def test_patch_inferer_errors(self, inputs, arguments, expected_error):
-    #     with self.assertRaises(expected_error):
-    #         PatchInferer(**arguments)
-    #         inferer = PatchInferer(**arguments)
-    #         inferer(inputs=inputs, network=lambda x: x)
+    @parameterized.expand(
+        [
+            TEST_CASE_ERROR_0,
+            TEST_CASE_ERROR_1,
+            TEST_CASE_ERROR_2,
+            TEST_CASE_ERROR_3,
+            TEST_CASE_ERROR_4,
+            TEST_CASE_ERROR_5,
+            TEST_CASE_ERROR_6,
+            TEST_CASE_ERROR_7,
+            TEST_CASE_ERROR_8,
+            TEST_CASE_ERROR_9,
+        ]
+    )
+    def test_patch_inferer_errors(self, inputs, arguments, expected_error):
+        with self.assertRaises(expected_error):
+            PatchInferer(**arguments)
+            inferer = PatchInferer(**arguments)
+            inferer(inputs=inputs, network=lambda x: x)
 
 
 if __name__ == "__main__":
