@@ -327,11 +327,9 @@ class PatchInferer(Inferer):
             kwargs: optional keyword args to be passed to ``network``.
 
         """
-        if condition is not None: 
+        if condition is not None:
             if condition.shape != inputs.shape:
-                raise ValueError(
-                    f"Input and condition shapes do not match: {inputs.shape} vs {condition.shape}"
-                )
+                raise ValueError(f"Input and condition shapes do not match: {inputs.shape} vs {condition.shape}")
         patches_locations: Iterable[tuple[torch.Tensor, Sequence[int]]] | MetaTensor
         if self.splitter is None:
             # handle situations where the splitter is not provided
@@ -361,11 +359,12 @@ class PatchInferer(Inferer):
                 # apply splitter to condition
                 condition_locations = self.splitter(condition)
 
-
         ratios: list[float] = []
         mergers: list[Merger] = []
         if condition is not None:
-            for (patches, locations, batch_size), (condition_patches, _, _) in zip(self._batch_sampler(patches_locations), self._batch_sampler(condition_locations)):
+            for (patches, locations, batch_size), (condition_patches, _, _) in zip(
+                self._batch_sampler(patches_locations), self._batch_sampler(condition_locations)
+            ):
                 # run inference
                 outputs = self._run_inference(network, patches, condition_patches, *args, **kwargs)
                 # initialize the mergers
@@ -373,7 +372,7 @@ class PatchInferer(Inferer):
                     mergers, ratios = self._initialize_mergers(inputs, outputs, patches, batch_size)
                 # aggregate outputs
                 self._aggregate(outputs, locations, batch_size, mergers, ratios)
-        else:   
+        else:
             for patches, locations, batch_size in self._batch_sampler(patches_locations):
                 # run inference
                 outputs = self._run_inference(network, patches, *args, **kwargs)
@@ -547,11 +546,9 @@ class SlidingWindowInferer(Inferer):
             kwargs: optional keyword args to be passed to ``network``.
 
         """
-        if condition is not None: 
+        if condition is not None:
             if condition.shape != inputs.shape:
-                raise ValueError(
-                    f"Input and condition shapes do not match: {inputs.shape} vs {condition.shape}"
-                )
+                raise ValueError(f"Input and condition shapes do not match: {inputs.shape} vs {condition.shape}")
         device = kwargs.pop("device", self.device)
         buffer_steps = kwargs.pop("buffer_steps", self.buffer_steps)
         buffer_dim = kwargs.pop("buffer_dim", self.buffer_dim)
@@ -775,10 +772,16 @@ class SliceInferer(SlidingWindowInferer):
                 f"Currently, only 2D `roi_size` ({self.orig_roi_size}) with 3D `inputs` tensor (shape={inputs.shape}) is supported."
             )
         if condition is not None:
-            return super().__call__(inputs=inputs, network=lambda x, c, *args, **kwargs : self.network_wrapper(network, x, c, *args, **kwargs), condition=condition)
+            return super().__call__(
+                inputs=inputs,
+                network=lambda x, c, *args, **kwargs: self.network_wrapper(network, x, c, *args, **kwargs),
+                condition=condition,
+            )
         else:
-            return super().__call__(inputs=inputs, network=lambda x, *args, **kwargs : self.network_wrapper(network, x, *args, **kwargs))
-    
+            return super().__call__(
+                inputs=inputs, network=lambda x, *args, **kwargs: self.network_wrapper(network, x, *args, **kwargs)
+            )
+
     def network_wrapper(
         self,
         network: Callable[..., torch.Tensor | Sequence[torch.Tensor] | dict[Any, torch.Tensor]],

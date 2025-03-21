@@ -128,7 +128,7 @@ def sliding_window_inference(
             0 indicates the first spatial dimension. Default is -1, the last spatial dimension.
         with_coord: whether to pass the window coordinates to ``predictor``. Default is False.
             If True, the signature of ``predictor`` should be ``predictor(patch_data, patch_coord, ...)``.
-        condition: optional condition tensor to be processed the same way as the input and fed to the predictor as an additional argument.
+        condition: conditional signal for inference (e.g. for conditional GANs or Diffusion Models).
         args: optional args to be passed to ``predictor``.
         kwargs: optional keyword args to be passed to ``predictor``.
 

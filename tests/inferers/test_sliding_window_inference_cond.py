@@ -17,8 +17,7 @@ import unittest
 import numpy as np
 import torch
 from parameterized import parameterized
-import sys
-sys.path.append('/home/behrendt/projects/MONAI/MONAI')
+
 from monai.data.utils import list_data_collate
 from monai.inferers import SlidingWindowInferer, SlidingWindowInfererAdapt, sliding_window_inference
 from monai.utils import optional_import
@@ -105,7 +104,7 @@ class TestSlidingWindowInference(unittest.TestCase):
             inputs = torch.ones(*image_shape, dtype=torch.float)
         if device.type == "cuda" and not torch.cuda.is_available():
             device = torch.device("cpu:0")
-        
+
         # condition
         condition = torch.ones(*image_shape, dtype=torch.float)
 
@@ -116,13 +115,16 @@ class TestSlidingWindowInference(unittest.TestCase):
             expected_val = np.arange(n_total, dtype=np.float32).reshape(*image_shape) + 1.0
         else:
             expected_val = np.ones(image_shape, dtype=np.float32) + 1.0
-        
 
-        result = sliding_window_inference(inputs.to(device), roi_shape, sw_batch_size, compute, overlap, mode=mode, condition=condition.to(device))
+        result = sliding_window_inference(
+            inputs.to(device), roi_shape, sw_batch_size, compute, overlap, mode=mode, condition=condition.to(device)
+        )
         np.testing.assert_string_equal(device.type, result.device.type)
         np.testing.assert_allclose(result.cpu().numpy(), expected_val)
 
-        result = SlidingWindowInferer(roi_shape, sw_batch_size, overlap, mode)(inputs.to(device), compute, condition=condition.to(device))
+        result = SlidingWindowInferer(roi_shape, sw_batch_size, overlap, mode)(
+            inputs.to(device), compute, condition=condition.to(device)
+        )
         np.testing.assert_string_equal(device.type, result.device.type)
         np.testing.assert_allclose(result.cpu().numpy(), expected_val)
 
@@ -162,10 +164,13 @@ class TestSlidingWindowInference(unittest.TestCase):
 
             return data + condition
 
-        result = sliding_window_inference(inputs, roi_shape, sw_batch_size, compute, sw_device=sw_device, device="cpu", condition=condition)
+        result = sliding_window_inference(
+            inputs, roi_shape, sw_batch_size, compute, sw_device=sw_device, device="cpu", condition=condition
+        )
         np.testing.assert_string_equal("cpu", result.device.type)
         expected_val = np.ones((1, 3, 16, 15, 7), dtype=np.float32) + 1
         np.testing.assert_allclose(result.cpu().numpy(), expected_val)
+
     def test_sigma(self):
         device = "cuda" if torch.cuda.is_available() else "cpu:0"
         inputs = torch.ones((1, 1, 7, 7)).to(device=device)
@@ -250,7 +255,7 @@ class TestSlidingWindowInference(unittest.TestCase):
             roi_shape, sw_batch_size, overlap=0.5, mode="gaussian", sigma_scale=[1.0, 1.0], cache_roi_weight_map=True
         )(inputs, _Pred().compute)
         np.testing.assert_allclose(result.cpu().numpy(), expected, rtol=1e-4)
-    
+
     def test_cval(self):
         device = "cuda" if torch.cuda.is_available() else "cpu:0"
         inputs = torch.ones((1, 1, 3, 3)).to(device=device)
@@ -276,7 +281,9 @@ class TestSlidingWindowInference(unittest.TestCase):
         expected = np.ones((1, 1, 3, 3)) * -6.0 + 1.0
         np.testing.assert_allclose(result.cpu().numpy(), expected, rtol=1e-4)
 
-        result = SlidingWindowInferer(roi_shape, sw_batch_size, overlap=0.5, mode="constant", cval=-1)(inputs, compute, condition=condition)
+        result = SlidingWindowInferer(roi_shape, sw_batch_size, overlap=0.5, mode="constant", cval=-1)(
+            inputs, compute, condition=condition
+        )
         np.testing.assert_allclose(result.cpu().numpy(), expected, rtol=1e-4)
 
     def test_args_kwargs(self):
@@ -313,12 +320,12 @@ class TestSlidingWindowInference(unittest.TestCase):
             t1,
             test2=t2,
         )
-        expected = np.ones((1, 1, 3, 3)) + 3.0 
+        expected = np.ones((1, 1, 3, 3)) + 3.0
         np.testing.assert_allclose(result.cpu().numpy(), expected, rtol=1e-4)
 
         result = SlidingWindowInferer(
             roi_shape, sw_batch_size, overlap=0.5, mode="constant", cval=-1, progress=has_tqdm
-        )(inputs, compute, condition,t1, test2=t2)
+        )(inputs, compute, condition, t1, test2=t2)
         np.testing.assert_allclose(result.cpu().numpy(), expected, rtol=1e-4)
 
         result = SlidingWindowInfererAdapt(
@@ -334,10 +341,18 @@ class TestSlidingWindowInference(unittest.TestCase):
         sw_batch_size = 10
 
         def compute(data, condition):
-            return data + 1 + condition, data[:, ::3, ::2, ::2] + 2 + condition[:, ::3, ::2, ::2], data[:, ::2, ::4, ::4] + 3 + condition[:, ::2, ::4, ::4]
+            return (
+                data + 1 + condition,
+                data[:, ::3, ::2, ::2] + 2 + condition[:, ::3, ::2, ::2],
+                data[:, ::2, ::4, ::4] + 3 + condition[:, ::2, ::4, ::4],
+            )
 
         def compute_dict(data, condition):
-            return {1: data + 1 + condition, 2: data[:, ::3, ::2, ::2] + 2 + condition[:, ::3, ::2, ::2], 3: data[:, ::2, ::4, ::4] + 3 + condition[:, ::2, ::4, ::4]}
+            return {
+                1: data + 1 + condition,
+                2: data[:, ::3, ::2, ::2] + 2 + condition[:, ::3, ::2, ::2],
+                3: data[:, ::2, ::4, ::4] + 3 + condition[:, ::2, ::4, ::4],
+            }
 
         result = sliding_window_inference(
             inputs,

@@ -17,8 +17,7 @@ import unittest
 import numpy as np
 import torch
 from parameterized import parameterized
-import sys
-sys.path.append('/home/behrendt/projects/MONAI/MONAI')
+
 from monai.data.utils import list_data_collate
 from monai.inferers import SlidingWindowInferer, SlidingWindowInfererAdapt, sliding_window_inference
 from monai.utils import optional_import

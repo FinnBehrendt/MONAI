@@ -16,8 +16,7 @@ import unittest
 import torch
 from parameterized import parameterized
 from torch.nn.functional import avg_pool2d, pad
-import sys
-sys.path.append('/home/behrendt/projects/MONAI/MONAI')
+
 from monai.data.meta_tensor import MetaTensor
 from monai.inferers import AvgMerger, PatchInferer, SlidingWindowSplitter
 from tests.test_utils import assert_allclose
@@ -29,15 +28,15 @@ TENSOR_2x2 = avg_pool2d(TENSOR_4x4, 2, 2)
 TEST_CASE_0_TENSOR = [
     TENSOR_4x4,
     dict(splitter=SlidingWindowSplitter(patch_size=(2, 2)), merger_cls=AvgMerger),
-    lambda x, c : x + c,
+    lambda x, c: x + c,
     TENSOR_4x4 * 2,
 ]
 
 # no-overlapping 2x2 patches using all default parameters (except for splitter)
 TEST_CASE_1_TENSOR = [
-    TENSOR_4x4, 
-    dict(splitter=SlidingWindowSplitter(patch_size=(2, 2))), 
-    lambda x, c : x + c,
+    TENSOR_4x4,
+    dict(splitter=SlidingWindowSplitter(patch_size=(2, 2))),
+    lambda x, c: x + c,
     TENSOR_4x4 * 2,
 ]
 
@@ -45,7 +44,7 @@ TEST_CASE_1_TENSOR = [
 TEST_CASE_2_TENSOR = [
     TENSOR_4x4,
     dict(splitter=SlidingWindowSplitter(patch_size=(2, 2)), merger_cls=AvgMerger, batch_size=2),
-    lambda x, c : x + c,
+    lambda x, c: x + c,
     TENSOR_4x4 * 2,
 ]
 
@@ -53,7 +52,7 @@ TEST_CASE_2_TENSOR = [
 TEST_CASE_3_TENSOR = [
     TENSOR_4x4,
     dict(splitter=SlidingWindowSplitter(patch_size=(2, 2)), merger_cls=AvgMerger, batch_size=3),
-    lambda x, c : x + c,
+    lambda x, c: x + c,
     TENSOR_4x4 * 2,
 ]
 
@@ -66,7 +65,7 @@ TEST_CASE_4_SPLIT_LIST = [
         (TENSOR_4x4[..., 2:, 2:], (2, 2)),
     ],
     dict(splitter=None, merger_cls=AvgMerger, merged_shape=(2, 3, 4, 4)),
-    lambda x, c : x + c,
+    lambda x, c: x + c,
     TENSOR_4x4 * 2,
 ]
 
@@ -79,7 +78,7 @@ TEST_CASE_5_SPLIT_LIST = [
         (TENSOR_4x4[..., 2:, 2:], (2, 2)),
     ],
     dict(merger_cls=AvgMerger, merged_shape=(2, 3, 4, 4)),
-    lambda x, c : x + c,
+    lambda x, c: x + c,
     TENSOR_4x4 * 2,
 ]
 
@@ -100,8 +99,8 @@ TEST_CASE_7_PREPROCESS = [
         preprocessing=lambda x: 2 * x,
         postprocessing=None,
     ),
-    lambda x, c : x + c,
-    2 * TENSOR_4x4 + TENSOR_4x4, 
+    lambda x, c: x + c,
+    2 * TENSOR_4x4 + TENSOR_4x4,
 ]
 
 # preprocess patches
@@ -113,7 +112,7 @@ TEST_CASE_8_POSTPROCESS = [
         preprocessing=None,
         postprocessing=lambda x: 4 * x,
     ),
-    lambda x, c : x + c,
+    lambda x, c: x + c,
     4 * TENSOR_4x4 * 2,
 ]
 
@@ -121,7 +120,7 @@ TEST_CASE_8_POSTPROCESS = [
 TEST_CASE_9_STR_MERGER = [
     TENSOR_4x4,
     dict(splitter=SlidingWindowSplitter(patch_size=(2, 2)), merger_cls="AvgMerger"),
-    lambda x, c : x + c,
+    lambda x, c: x + c,
     TENSOR_4x4 * 2,
 ]
 
@@ -129,7 +128,7 @@ TEST_CASE_9_STR_MERGER = [
 TEST_CASE_10_STR_MERGER = [
     TENSOR_4x4,
     dict(splitter=SlidingWindowSplitter(patch_size=(2, 2)), merger_cls="monai.inferers.merger.AvgMerger"),
-    lambda x, c : x + c,
+    lambda x, c: x + c,
     TENSOR_4x4 * 2,
 ]
 
@@ -141,7 +140,7 @@ TEST_CASE_11_PADDING = [
         merger_cls=AvgMerger,
         match_spatial_shape=False,
     ),
-    lambda x, c : x + c,
+    lambda x, c: x + c,
     pad(TENSOR_4x4, (0, 2), value=0.0) * 2,
 ]
 
@@ -149,7 +148,7 @@ TEST_CASE_11_PADDING = [
 TEST_CASE_12_MATCHING = [
     TENSOR_4x4,
     dict(splitter=SlidingWindowSplitter(patch_size=(2, 3), pad_mode=None), merger_cls=AvgMerger),
-    lambda x, c : x + c,
+    lambda x, c: x + c,
     pad(TENSOR_4x4[..., :3], (0, 1), value=float("nan")) * 2,
 ]
 
@@ -157,7 +156,7 @@ TEST_CASE_12_MATCHING = [
 TEST_CASE_13_PADDING_MATCHING = [
     TENSOR_4x4,
     dict(splitter=SlidingWindowSplitter(patch_size=(2, 3)), merger_cls=AvgMerger),
-    lambda x, c : x + c,
+    lambda x, c: x + c,
     TENSOR_4x4 * 2,
 ]
 
@@ -165,7 +164,7 @@ TEST_CASE_13_PADDING_MATCHING = [
 TEST_CASE_14_MULTITHREAD_BUFFER = [
     TENSOR_4x4,
     dict(splitter=SlidingWindowSplitter(patch_size=(2, 2)), merger_cls=AvgMerger, buffer_size=2),
-    lambda x, c : x + c,
+    lambda x, c: x + c,
     TENSOR_4x4 * 2,
 ]
 
@@ -173,7 +172,7 @@ TEST_CASE_14_MULTITHREAD_BUFFER = [
 TEST_CASE_15_MULTITHREADD_BUFFER = [
     TENSOR_4x4,
     dict(splitter=SlidingWindowSplitter(patch_size=(2, 2)), merger_cls=AvgMerger, buffer_size=4, batch_size=4),
-    lambda x, c : x + c,
+    lambda x, c: x + c,
     TENSOR_4x4 * 2,
 ]
 
@@ -272,8 +271,8 @@ class PatchInfererTests(unittest.TestCase):
         ]
     )
     def test_patch_inferer_tensor(self, inputs, arguments, network, expected):
-        if isinstance(inputs, list): # case 4 and 5
-            condition = [(x[0].clone(), x[1]) for x in inputs]        
+        if isinstance(inputs, list):  # case 4 and 5
+            condition = [(x[0].clone(), x[1]) for x in inputs]
         else:
             condition = inputs.clone()
         inferer = PatchInferer(**arguments)
@@ -282,8 +281,8 @@ class PatchInfererTests(unittest.TestCase):
 
     @parameterized.expand([TEST_CASE_0_LIST_TENSOR])
     def test_patch_inferer_list_tensor(self, inputs, arguments, network, expected):
-        if isinstance(inputs, list): # case 4 and 5
-            condition = [(x[0].clone(), x[1]) for x in inputs]        
+        if isinstance(inputs, list):  # case 4 and 5
+            condition = [(x[0].clone(), x[1]) for x in inputs]
         else:
             condition = inputs.clone()
         inferer = PatchInferer(**arguments)
@@ -293,8 +292,8 @@ class PatchInfererTests(unittest.TestCase):
 
     @parameterized.expand([TEST_CASE_0_DICT])
     def test_patch_inferer_dict(self, inputs, arguments, network, expected):
-        if isinstance(inputs, list): # case 4 and 5
-            condition = [(x[0].clone(), x[1]) for x in inputs]        
+        if isinstance(inputs, list):  # case 4 and 5
+            condition = [(x[0].clone(), x[1]) for x in inputs]
         else:
             condition = inputs.clone()
         inferer = PatchInferer(**arguments)

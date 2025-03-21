@@ -1,5 +1,3 @@
-
-
 # Copyright (c) MONAI Consortium
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,8 +15,7 @@ import unittest
 
 import torch
 from parameterized import parameterized
-import sys 
-sys.path.append('/home/behrendt/projects/MONAI/MONAI')
+
 from monai.inferers import SliceInferer
 from monai.networks.nets import UNet
 
