@@ -224,7 +224,7 @@ def sliding_window_inference(
         ]
         if sw_batch_size > 1:
             win_data = torch.cat([inputs[win_slice] for win_slice in unravel_slice]).to(sw_device)
-            if condition is not None: 
+            if condition is not None:
                 win_condition = torch.cat([condition[win_slice] for win_slice in unravel_slice]).to(sw_device)
                 kwargs["condition"] = win_condition
         else:
@@ -234,15 +234,9 @@ def sliding_window_inference(
                 kwargs["condition"] = win_condition
 
         if with_coord:
-            # if condition is not None:
-            #     seg_prob_out = predictor(win_data, win_condition, unravel_slice, *args, **kwargs)
-            # else:
-                seg_prob_out = predictor(win_data, unravel_slice, *args, **kwargs)
+            seg_prob_out = predictor(win_data, unravel_slice, *args, **kwargs)
         else:
-            # if condition is not None:
-            #     seg_prob_out = predictor(win_data, win_condition, *args, **kwargs)
-            # else:
-                seg_prob_out = predictor(win_data, *args, **kwargs)
+            seg_prob_out = predictor(win_data, *args, **kwargs)
         # convert seg_prob_out to tuple seg_tuple, this does not allocate new memory.
         dict_keys, seg_tuple = _flatten_struct(seg_prob_out)
         if process_fn:

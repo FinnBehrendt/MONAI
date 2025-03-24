@@ -325,8 +325,8 @@ class PatchInferer(Inferer):
 
         """
         # check if there is a conditioning signal
-        condition = kwargs.pop("condition", None) 
-            
+        condition = kwargs.pop("condition", None)
+
         patches_locations: Iterable[tuple[torch.Tensor, Sequence[int]]] | MetaTensor
         if self.splitter is None:
             # handle situations where the splitter is not provided
@@ -361,7 +361,7 @@ class PatchInferer(Inferer):
         if condition is not None:
             for (patches, locations, batch_size), (condition_patches, _, _) in zip(
                 self._batch_sampler(patches_locations), self._batch_sampler(condition_locations)
-            ):  
+            ):
                 # add patched condition to kwargs
                 kwargs["condition"] = condition_patches
                 # run inference
@@ -763,13 +763,13 @@ class SliceInferer(SlidingWindowInferer):
             raise RuntimeError(
                 f"Currently, only 2D `roi_size` ({self.orig_roi_size}) with 3D `inputs` tensor (shape={inputs.shape}) is supported."
             )
-        
+
         # check if there is a conditioning signal
-        condition = kwargs.get("condition", None) 
+        condition = kwargs.get("condition", None)
         if condition is not None:
             return super().__call__(
                 inputs=inputs,
-                network=lambda x,  *args, **kwargs: self.network_wrapper(network, x, *args, **kwargs),
+                network=lambda x, *args, **kwargs: self.network_wrapper(network, x, *args, **kwargs),
                 condition=condition,
             )
         else:
