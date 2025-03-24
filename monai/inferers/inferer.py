@@ -87,7 +87,6 @@ class Inferer(ABC):
         Args:
             inputs: input of the model inference.
             network: model for inference.
-            condition: conditional signal for inference (e.g. for conditional GANs or Diffusion Models).
             args: optional args to be passed to ``network``.
             kwargs: optional keyword args to be passed to ``network``.
 
@@ -311,7 +310,6 @@ class PatchInferer(Inferer):
         self,
         inputs: torch.Tensor,
         network: Callable[..., torch.Tensor | Sequence[torch.Tensor] | dict[Any, torch.Tensor]],
-        condition: torch.Tensor | None = None,
         *args: Any,
         **kwargs: Any,
     ) -> Any:
@@ -322,14 +320,13 @@ class PatchInferer(Inferer):
                 or a MetaTensor that has metadata for `PatchKeys.LOCATION`. In both cases no splitter should be provided.
             network: target model to execute inference.
                 supports callables such as ``lambda x: my_torch_model(x, additional_config)``
-            condition: conditional signal for inference (e.g. for conditional GANs or Diffusion Models).
             args: optional args to be passed to ``network``.
             kwargs: optional keyword args to be passed to ``network``.
 
         """
-        if condition is not None:
-            if condition.shape != inputs.shape:
-                raise ValueError(f"Input and condition shapes do not match: {inputs.shape} vs {condition.shape}")
+        # check if there is a conditioning signal
+        condition = kwargs.pop("condition", None) 
+            
         patches_locations: Iterable[tuple[torch.Tensor, Sequence[int]]] | MetaTensor
         if self.splitter is None:
             # handle situations where the splitter is not provided
@@ -364,9 +361,11 @@ class PatchInferer(Inferer):
         if condition is not None:
             for (patches, locations, batch_size), (condition_patches, _, _) in zip(
                 self._batch_sampler(patches_locations), self._batch_sampler(condition_locations)
-            ):
+            ):  
+                # add patched condition to kwargs
+                kwargs["condition"] = condition_patches
                 # run inference
-                outputs = self._run_inference(network, patches, condition_patches, *args, **kwargs)
+                outputs = self._run_inference(network, patches, *args, **kwargs)
                 # initialize the mergers
                 if not mergers:
                     mergers, ratios = self._initialize_mergers(inputs, outputs, patches, batch_size)
@@ -531,7 +530,6 @@ class SlidingWindowInferer(Inferer):
         self,
         inputs: torch.Tensor,
         network: Callable[..., torch.Tensor | Sequence[torch.Tensor] | dict[Any, torch.Tensor]],
-        condition: torch.Tensor | None = None,
         *args: Any,
         **kwargs: Any,
     ) -> torch.Tensor | tuple[torch.Tensor, ...] | dict[Any, torch.Tensor]:
@@ -541,14 +539,11 @@ class SlidingWindowInferer(Inferer):
             inputs: model input data for inference.
             network: target model to execute inference.
                 supports callables such as ``lambda x: my_torch_model(x, additional_config)``
-            condition: conditional signal for inference (e.g. for conditional GANs or Diffusion Models).
             args: optional args to be passed to ``network``.
             kwargs: optional keyword args to be passed to ``network``.
 
         """
-        if condition is not None:
-            if condition.shape != inputs.shape:
-                raise ValueError(f"Input and condition shapes do not match: {inputs.shape} vs {condition.shape}")
+
         device = kwargs.pop("device", self.device)
         buffer_steps = kwargs.pop("buffer_steps", self.buffer_steps)
         buffer_dim = kwargs.pop("buffer_dim", self.buffer_dim)
@@ -574,7 +569,6 @@ class SlidingWindowInferer(Inferer):
             buffer_steps,
             buffer_dim,
             self.with_coord,
-            condition,
             *args,
             **kwargs,
         )
@@ -747,7 +741,6 @@ class SliceInferer(SlidingWindowInferer):
         self,
         inputs: torch.Tensor,
         network: Callable[..., torch.Tensor | Sequence[torch.Tensor] | dict[Any, torch.Tensor]],
-        condition: torch.Tensor | None = None,
         *args: Any,
         **kwargs: Any,
     ) -> torch.Tensor | tuple[torch.Tensor, ...] | dict[Any, torch.Tensor]:
@@ -755,7 +748,6 @@ class SliceInferer(SlidingWindowInferer):
         Args:
             inputs: 3D input for inference
             network: 2D model to execute inference on slices in the 3D input
-            condition: conditional signal for inference (e.g. for conditional GANs or Diffusion Models).
             args: optional args to be passed to ``network``.
             kwargs: optional keyword args to be passed to ``network``.
         """
@@ -771,10 +763,13 @@ class SliceInferer(SlidingWindowInferer):
             raise RuntimeError(
                 f"Currently, only 2D `roi_size` ({self.orig_roi_size}) with 3D `inputs` tensor (shape={inputs.shape}) is supported."
             )
+        
+        # check if there is a conditioning signal
+        condition = kwargs.get("condition", None) 
         if condition is not None:
             return super().__call__(
                 inputs=inputs,
-                network=lambda x, c, *args, **kwargs: self.network_wrapper(network, x, c, *args, **kwargs),
+                network=lambda x,  *args, **kwargs: self.network_wrapper(network, x, *args, **kwargs),
                 condition=condition,
             )
         else:

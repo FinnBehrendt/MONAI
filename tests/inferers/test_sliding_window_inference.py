@@ -295,7 +295,6 @@ class TestSlidingWindowInference(unittest.TestCase):
             None,
             0,
             False,
-            None,
             t1,
             test2=t2,
         )
@@ -304,12 +303,12 @@ class TestSlidingWindowInference(unittest.TestCase):
 
         result = SlidingWindowInferer(
             roi_shape, sw_batch_size, overlap=0.5, mode="constant", cval=-1, progress=has_tqdm
-        )(inputs, compute, None, t1, test2=t2)
+        )(inputs, compute, t1, test2=t2)
         np.testing.assert_allclose(result.cpu().numpy(), expected, rtol=1e-4)
 
         result = SlidingWindowInfererAdapt(
             roi_shape, sw_batch_size, overlap=0.5, mode="constant", cval=-1, progress=has_tqdm
-        )(inputs, compute, None, t1, test2=t2)
+        )(inputs, compute, t1, test2=t2)
         np.testing.assert_allclose(result.cpu().numpy(), expected, rtol=1e-4)
 
     def test_multioutput(self):

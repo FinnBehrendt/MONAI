@@ -295,7 +295,7 @@ class TestSlidingWindowInference(unittest.TestCase):
         roi_shape = (5, 5)
         sw_batch_size = 10
 
-        def compute(data, condition, test1, test2):
+        def compute(data, test1, test2, condition):
             return data + test1 + test2 + condition
 
         result = sliding_window_inference(
@@ -316,8 +316,8 @@ class TestSlidingWindowInference(unittest.TestCase):
             None,
             0,
             False,
-            condition,
             t1,
+            condition=condition,
             test2=t2,
         )
         expected = np.ones((1, 1, 3, 3)) + 3.0
@@ -325,12 +325,12 @@ class TestSlidingWindowInference(unittest.TestCase):
 
         result = SlidingWindowInferer(
             roi_shape, sw_batch_size, overlap=0.5, mode="constant", cval=-1, progress=has_tqdm
-        )(inputs, compute, condition, t1, test2=t2)
+        )(inputs, compute, t1, condition=condition, test2=t2)
         np.testing.assert_allclose(result.cpu().numpy(), expected, rtol=1e-4)
 
         result = SlidingWindowInfererAdapt(
             roi_shape, sw_batch_size, overlap=0.5, mode="constant", cval=-1, progress=has_tqdm
-        )(inputs, compute, condition, t1, test2=t2)
+        )(inputs, compute, t1, condition=condition, test2=t2)
         np.testing.assert_allclose(result.cpu().numpy(), expected, rtol=1e-4)
 
     def test_multioutput(self):
@@ -395,13 +395,13 @@ class TestSlidingWindowInference(unittest.TestCase):
 
         result = SlidingWindowInferer(
             roi_shape, sw_batch_size, overlap=0.5, mode="constant", cval=-1, progress=has_tqdm
-        )(inputs, compute, condition)
+        )(inputs, compute, condition=condition)
         for rr, ee in zip(result, expected):
             np.testing.assert_allclose(rr.cpu().numpy(), ee, rtol=1e-4)
 
         result_dict = SlidingWindowInferer(
             roi_shape, sw_batch_size, overlap=0.5, mode="constant", cval=-1, progress=has_tqdm
-        )(inputs, compute_dict, condition)
+        )(inputs, compute_dict, condition=condition)
         for rr, _ in zip(result_dict, expected_dict):
             np.testing.assert_allclose(result_dict[rr].cpu().numpy(), expected_dict[rr], rtol=1e-4)
 
